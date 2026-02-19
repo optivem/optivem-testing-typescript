@@ -1,5 +1,5 @@
 {
-  "name": "optivem-testing-typescript",
+  "name": "@optivem/optivem-testing",
   "version": "1.0.0",
   "description": "Simple calculator with TypeScript and Jest tests",
   "main": "dist/index.js",
