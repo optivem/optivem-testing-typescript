@@ -50,9 +50,11 @@ jobs:
       - name: Download RC package from GitHub Packages
         run: |
           mkdir -p /tmp/rc-artifacts
+          echo "@optivem:registry=https://npm.pkg.github.com" > /tmp/rc-artifacts/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> /tmp/rc-artifacts/.npmrc
           cd /tmp/rc-artifacts
           npm pack @optivem/optivem-testing@${{ steps.find-rc.outputs.rc-version }} \
-            --registry https://npm.pkg.github.com
+            --userconfig /tmp/rc-artifacts/.npmrc
           ls -la
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
