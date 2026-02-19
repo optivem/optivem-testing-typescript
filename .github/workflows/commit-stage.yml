@@ -11,6 +11,8 @@ jobs:
   build-and-test:
     name: Build & Test
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
 
     steps:
       - name: Checkout code
@@ -34,6 +36,4 @@ jobs:
 
       - name: Publish to npm
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --provenance
