@@ -34,8 +34,17 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Get npm OIDC token
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        id: oidc
+        run: |
+          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://registry.npmjs.org" \
+            | jq -r ".value")
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
       - name: Publish to npm
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: |
-          npm config delete //registry.npmjs.org/:_authToken
-          npm publish --access public --provenance
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ steps.oidc.outputs.token }}
