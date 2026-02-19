@@ -1,2 +1,1 @@
-# optivem-testing-typescript
-Optivem Testing (TypeScript)
+# Optivem Testing (TypeScript)
