@@ -36,7 +36,7 @@ jobs:
       - name: Test dependency resolution (GitHub Packages)
         working-directory: system-test/smoke-test-rc
         run: |
-          npm install --force --no-cache
+          npm install --prefer-online
           echo "✅ Successfully resolved RC package from GitHub Packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

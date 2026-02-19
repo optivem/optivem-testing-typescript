@@ -25,30 +25,12 @@ jobs:
         with:
           node-version: 22
 
-      - name: Configure GitHub Packages
-        run: |
-          echo "@optivem:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> ~/.npmrc
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Find latest RC version if not provided
         id: find-rc
-        run: |
-          if [ -n "${{ github.event.inputs.rc_version }}" ]; then
-            RC_VERSION="${{ github.event.inputs.rc_version }}"
-          else
-            RC_VERSION=$(npm view @optivem/optivem-testing versions --json 2>/dev/null \
-              | jq -r '.[] | select(contains("-rc."))' | sort -V | tail -1)
-          fi
-          if [ -z "$RC_VERSION" ]; then
-            echo "::error::No RC version found"
-            exit 1
-          fi
-          echo "rc-version=$RC_VERSION" >> $GITHUB_OUTPUT
-          echo "Using RC: $RC_VERSION"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ./.github/actions/find-latest-npm-rc-version
+        with:
+          rc-version: ${{ github.event.inputs.rc_version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract release version
         id: version
