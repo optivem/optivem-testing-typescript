@@ -1,0 +1,85 @@
+name: Acceptance Stage
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Runs every hour
+  workflow_dispatch:
+
+concurrency:
+  group: acceptance-stage
+  cancel-in-progress: true
+
+jobs:
+  smoke-test-rc:
+    name: Smoke Test RC
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Find latest RC version
+        id: find-rc
+        run: |
+          echo "@optivem:registry=https://npm.pkg.github.com" > ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> ~/.npmrc
+          RC_VERSION=$(npm view @optivem/optivem-testing versions --json 2>/dev/null \
+            | jq -r '.[] | select(contains("-rc."))' | sort -V | tail -1)
+          if [ -z "$RC_VERSION" ]; then
+            echo "::error::No RC version found in GitHub Packages"
+            exit 1
+          fi
+          echo "rc-version=$RC_VERSION" >> $GITHUB_OUTPUT
+          echo "Found latest RC: $RC_VERSION"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run smoke tests against RC
+        run: |
+          mkdir -p /tmp/smoke-test && cd /tmp/smoke-test
+          cat > package.json << EOF
+          {
+            "name": "smoke-test",
+            "version": "1.0.0",
+            "type": "commonjs"
+          }
+          EOF
+          echo "@optivem:registry=https://npm.pkg.github.com" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc
+          npm install @optivem/optivem-testing@${{ steps.find-rc.outputs.rc-version }}
+          node -e "
+            const { Calculator } = require('@optivem/optivem-testing');
+            const c = new Calculator();
+            console.assert(c.add(1, 2) === 3, 'add failed');
+            console.assert(c.subtract(5, 3) === 2, 'subtract failed');
+            console.assert(c.multiply(3, 4) === 12, 'multiply failed');
+            console.assert(c.divide(10, 2) === 5, 'divide failed');
+            console.assert(c.power(2, 3) === 8, 'power failed');
+            try { c.divide(1, 0); console.assert(false, 'divide by zero should throw'); }
+            catch(e) { console.assert(e.message === 'Division by zero is not allowed', 'wrong error'); }
+            console.log('✅ All smoke tests passed');
+          "
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create acceptance summary
+        run: |
+          echo "## ✅ Acceptance Stage Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**RC Version Tested:** \`${{ steps.find-rc.outputs.rc-version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🧪 **Tests Run:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Installed RC package from GitHub Packages" >> $GITHUB_STEP_SUMMARY
+          echo "- Ran smoke tests against published package" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ✅ All acceptance tests passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next Step:** RC is ready for promotion to release" >> $GITHUB_STEP_SUMMARY

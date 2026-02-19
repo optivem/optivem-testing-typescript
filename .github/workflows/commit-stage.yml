@@ -2,20 +2,24 @@ name: Commit Stage
 
 on:
   push:
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
-    branches: ["**"]
+    branches: ["main"]
   workflow_dispatch:
 
+concurrency:
+  group: commit-stage
+  cancel-in-progress: true
+
 jobs:
-  build-and-test:
+  build-and-publish:
     name: Build & Test
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
-      # TODO: id-token: write is required for the long-term solution using npm Trusted Publishing (OIDC).
-      # Once fully configured on npmjs.com (package Settings → Trusted Publishers), remove NODE_AUTH_TOKEN
-      # and use: npm publish --access public --provenance (no env token needed)
+      contents: read
+      packages: write
+    outputs:
+      rc-version: ${{ steps.version.outputs.rc-version }}
 
     steps:
       - name: Checkout code
@@ -26,7 +30,6 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          registry-url: https://registry.npmjs.org # Required for NODE_AUTH_TOKEN to work
 
       - name: Install dependencies
         run: npm ci
@@ -37,13 +40,34 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Publish to npm
+      - name: Extract base version
+        id: base-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Generate RC version
+        id: version
+        run: echo "rc-version=${{ steps.base-version.outputs.version }}-rc.${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+      - name: Publish RC to GitHub Packages
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        # TODO: Long-term, replace NODE_AUTH_TOKEN with npm Trusted Publishing (OIDC):
-        # 1. On npmjs.com → package Settings → Trusted Publishers → add this workflow
-        # 2. Remove registry-url from setup-node step above
-        # 3. Remove NODE_AUTH_TOKEN env below
-        # 4. Change run to: npm publish --access public --provenance
-        run: npm publish --access public
+        run: |
+          echo "@optivem:registry=https://npm.pkg.github.com" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc
+          npm version ${{ steps.version.outputs.rc-version }} --no-git-tag-version
+          npm publish --access public --tag rc
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create commit stage summary
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          echo "## ✅ Commit Stage Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**RC Version Published:** \`${{ steps.version.outputs.rc-version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 **Actions Completed:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Built and tested library" >> $GITHUB_STEP_SUMMARY
+          echo "- Published RC to GitHub Packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next Step:** RC will be automatically tested in acceptance stage" >> $GITHUB_STEP_SUMMARY
+
