@@ -48,48 +48,22 @@ jobs:
           fi
 
       - name: Download RC package from GitHub Packages
-        run: |
-          mkdir -p /tmp/rc-artifacts
-          echo "@optivem:registry=https://npm.pkg.github.com" > /tmp/rc-artifacts/.npmrc
-          echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> /tmp/rc-artifacts/.npmrc
-          cd /tmp/rc-artifacts
-          npm pack @optivem/optivem-testing@${{ steps.find-rc.outputs.rc-version }} \
-            --userconfig /tmp/rc-artifacts/.npmrc
-          ls -la
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ./.github/actions/download-npm-rc-artifacts
+        with:
+          rc-version: ${{ steps.find-rc.outputs.rc-version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare release artifacts
-        run: |
-          cd /tmp/rc-artifacts
-          RC_TGZ=$(ls optivem-optivem-testing-*.tgz)
-          tar -xzf "$RC_TGZ"
-          # Update version in package.json to release version
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package/package.json', 'utf8'));
-            pkg.version = '${{ steps.version.outputs.release-version }}';
-            fs.writeFileSync('package/package.json', JSON.stringify(pkg, null, 2));
-            console.log('Updated version to:', pkg.version);
-          "
-          # Repack
-          tar -czf optivem-optivem-testing-${{ steps.version.outputs.release-version }}.tgz package/
-          echo "Release artifact prepared:"
-          ls -lh optivem-optivem-testing-${{ steps.version.outputs.release-version }}.tgz
+        uses: ./.github/actions/prepare-npm-release-artifacts
+        with:
+          rc-version: ${{ steps.find-rc.outputs.rc-version }}
+          release-version: ${{ steps.version.outputs.release-version }}
 
       - name: Publish to npm
-        # TODO: Long-term, switch to npm Trusted Publishing (OIDC) instead of NPM_TOKEN:
-        # 1. Add id-token: write permission to this job
-        # 2. Remove the echo _authToken line below
-        # 3. Add --provenance flag
-        run: |
-          echo "registry=https://registry.npmjs.org/" > /tmp/release.npmrc
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> /tmp/release.npmrc
-          npm publish /tmp/rc-artifacts/optivem-optivem-testing-${{ steps.version.outputs.release-version }}.tgz \
-            --access public \
-            --userconfig /tmp/release.npmrc
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        uses: ./.github/actions/publish-npm
+        with:
+          package-path: /tmp/rc-artifacts/optivem-optivem-testing-${{ steps.version.outputs.release-version }}.tgz
+          npm-token: ${{ secrets.NPM_TOKEN }}
 
       - name: Create Git tag
         run: |

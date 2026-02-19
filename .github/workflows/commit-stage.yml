@@ -42,7 +42,7 @@ jobs:
 
       - name: Extract base version
         id: base-version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+        uses: ./.github/actions/extract-npm-version
 
       - name: Generate RC version
         id: version
