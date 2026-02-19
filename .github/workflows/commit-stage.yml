@@ -13,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
+      # TODO: id-token: write is required for the long-term solution using npm Trusted Publishing (OIDC).
+      # Once fully configured on npmjs.com (package Settings → Trusted Publishers), remove NODE_AUTH_TOKEN
+      # and use: npm publish --access public --provenance (no env token needed)
 
     steps:
       - name: Checkout code
@@ -23,6 +26,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          registry-url: https://registry.npmjs.org # Required for NODE_AUTH_TOKEN to work
 
       - name: Install dependencies
         run: npm ci
@@ -35,6 +39,11 @@ jobs:
 
       - name: Publish to npm
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: |
-          echo "registry=https://registry.npmjs.org/" > ~/.npmrc
-          npm publish --access public --provenance
+        # TODO: Long-term, replace NODE_AUTH_TOKEN with npm Trusted Publishing (OIDC):
+        # 1. On npmjs.com → package Settings → Trusted Publishers → add this workflow
+        # 2. Remove registry-url from setup-node step above
+        # 3. Remove NODE_AUTH_TOKEN env below
+        # 4. Change run to: npm publish --access public --provenance
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
