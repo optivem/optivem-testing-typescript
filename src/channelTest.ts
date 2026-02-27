@@ -1,5 +1,14 @@
 import { test as base } from '@playwright/test';
-import { Closer } from '@optivem/commons/util';
+
+interface Closeable {
+    close?: () => void | Promise<void>;
+}
+
+async function tryClose(obj: unknown): Promise<void> {
+    if (obj != null && typeof (obj as Closeable).close === 'function') {
+        await (obj as Closeable).close!();
+    }
+}
 
 /**
  * Runs the same test for each specified channel type.
@@ -41,7 +50,7 @@ export function channelTest(
         baseFixtures[name] = async ({}, use: any) => {
             const driver = factory();
             await use(driver);
-            await Closer.close(driver);
+            await tryClose(driver);
         };
     }
 
@@ -53,7 +62,7 @@ export function channelTest(
             [fixtureName]: async ({}, use: any) => {
                 const driver = driverFactory(channelType);
                 await use(driver);
-                await Closer.close(driver);
+                await tryClose(driver);
             },
         });
 

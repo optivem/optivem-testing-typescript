@@ -1,13 +1,11 @@
-import type { Optional } from '@optivem/commons/util';
-
 export class ChannelContext {
-    private static channelThreadLocal: Optional<string>;
+    private static channelThreadLocal: string | undefined;
 
     static set(channel: string): void {
         this.channelThreadLocal = channel;
     }
 
-    static get(): Optional<string> {
+    static get(): string | undefined {
         return this.channelThreadLocal;
     }
 
