@@ -1,5 +1,8 @@
 import { test as base, expect } from '@playwright/test';
-import { registerChannelTest, withChannels as sharedWithChannels } from '../channel';
+import {
+    registerChannelTest,
+    withChannels as sharedWithChannels,
+} from '../channel.js';
 
 export interface ScenarioChannelFixtures<TScenario> {
     scenario: TScenario;
@@ -79,7 +82,7 @@ export function createScenarioChannelFixtures<TApp, TScenario>(
     ): ((name: string, fn: (args: { scenario: TScenario } & TCase) => Promise<void>) => void) => {
         return (name: string, fn: (args: { scenario: TScenario } & TCase) => Promise<void>): void => {
             cases.forEach((row) => {
-                const testName = name.replace(/\$(\w+)/g, (_: string, key: string) => {
+                const testName = name.replaceAll(/\$(\w+)/g, (_, key) => {
                     const value = row[key];
                     if (typeof value === 'string') return value;
                     if (typeof value === 'number') return value.toString();
