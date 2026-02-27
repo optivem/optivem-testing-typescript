@@ -13,7 +13,7 @@
  * ```
  */
 export function createTestEach(
-    testObj: (name: string, fn: (fixtures: any) => Promise<void>) => void,
+    testObj: any,
 ) {
     return <TCase extends Record<string, unknown>>(
         cases: ReadonlyArray<TCase>,
@@ -26,9 +26,16 @@ export function createTestEach(
                     if (typeof value === 'number') return value.toString();
                     return '';
                 });
-                testObj(testName, async (fixtures: any) => {
-                    await fn({ ...fixtures, ...row });
-                });
+                // Inject each row property as a Playwright fixture so we
+                // never need rest-property syntax in the test callback.
+                const rowFixtures: Record<string, any> = {};
+                for (const [key, value] of Object.entries(row)) {
+                    rowFixtures[key] = async ({}: any, use: any) => {
+                        await use(value);
+                    };
+                }
+                const extendedTest = testObj.extend(rowFixtures);
+                extendedTest(testName, fn);
             });
         };
     };

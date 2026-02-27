@@ -1,4 +1,4 @@
-import { ChannelContext } from './ChannelContext.js';
+import { ChannelContext } from './ChannelContext';
 
 type ChannelTestFn<TFixtures> = (fixtures: TFixtures) => Promise<void>;
 type RegisterChannelTest<TFixtures> = (
