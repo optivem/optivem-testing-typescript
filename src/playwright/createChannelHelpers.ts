@@ -1,4 +1,4 @@
-import { withChannels as sharedWithChannels } from '../channel';
+import { withChannels as sharedWithChannels } from '../channel.js';
 
 /**
  * Creates channel helpers (withChannels) bound to a specific Playwright test object.
