@@ -1,4 +1,4 @@
-import { forChannels as sharedForChannels } from '../channel';
+import { forChannels as sharedForChannels } from '../channel.js';
 
 /**
  * Binds channel helpers (forChannels) to a specific Playwright test object.
