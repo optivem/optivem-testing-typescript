@@ -65,6 +65,13 @@ jobs:
           package-path: /tmp/rc-artifacts/optivem-optivem-testing-${{ steps.version.outputs.release-version }}.tgz
           npm-token: ${{ secrets.NPM_TOKEN }}
 
+      - name: Run release smoke tests (npm)
+        working-directory: system-test/smoke-test-release
+        run: |
+          npm install @optivem/optivem-testing@${{ steps.version.outputs.release-version }} --prefer-online
+          echo "✅ Successfully resolved release package from npm"
+          npm test
+
       - name: Create Git tag
         run: |
           git config user.name "github-actions[bot]"
@@ -108,6 +115,7 @@ jobs:
           echo "- ✅ Downloaded RC package from GitHub Packages" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Repacked with release version (same artifacts, no rebuild)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Published to npm" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Ran release smoke tests against npm" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Created Git tag v${{ steps.version.outputs.release-version }}" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Created GitHub Release" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

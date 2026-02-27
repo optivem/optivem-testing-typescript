@@ -1,0 +1,12 @@
+{
+  "name": "smoke-test-release",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Smoke tests for release package from npm",
+  "scripts": {
+    "test": "node smoke-test.js"
+  },
+  "dependencies": {
+    "@optivem/optivem-testing": "latest"
+  }
+}
