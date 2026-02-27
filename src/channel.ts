@@ -1,7 +1,7 @@
 import { ChannelContext } from './ChannelContext';
 
 type ChannelTestFn<TFixtures> = (fixtures: TFixtures) => Promise<void>;
-type RegisterChannelTest<TFixtures> = (
+type RegisterChannel<TFixtures> = (
     testName: string,
     testFn: ChannelTestFn<TFixtures>
 ) => void;
@@ -15,8 +15,8 @@ export interface ChannelDescribeApi {
     afterEach: Hook;
 }
 
-export function registerChannelTest<TFixtures>(
-    registerTest: RegisterChannelTest<TFixtures>,
+export function registerChannel<TFixtures>(
+    registerTest: RegisterChannel<TFixtures>,
     channelTypes: string[],
     testName: string,
     testFn: ChannelTestFn<TFixtures>
@@ -39,16 +39,16 @@ export function registerChannelTest<TFixtures>(
     }
 }
 
-export function createChannel<TFixtures>(
-    registerTest: RegisterChannelTest<TFixtures>,
+export function defineChannel<TFixtures>(
+    registerTest: RegisterChannel<TFixtures>,
     ...channelTypes: string[]
 ): (testName: string, testFn: ChannelTestFn<TFixtures>) => void {
     return (testName: string, testFn: ChannelTestFn<TFixtures>) => {
-        registerChannelTest(registerTest, channelTypes, testName, testFn);
+        registerChannel(registerTest, channelTypes, testName, testFn);
     };
 }
 
-export function withChannels(
+export function forChannels(
     channelApi: ChannelDescribeApi,
     ...channelTypes: string[]
 ): (block: () => void) => void {

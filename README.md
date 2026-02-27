@@ -16,16 +16,16 @@ npm install @optivem/optivem-testing
 
 ## Exports
 
-- `withChannels` and channel primitives from `channel`
-- `createChannelHelpers(test)`
-- `createTestEach(test)`
+- `forChannels` and channel primitives from `channel`
+- `bindChannels(test)`
+- `bindTestEach(test)`
 - `channelTest` (legacy convenience helper)
 
 ## Example
 
 ```typescript
 import { test as base, expect } from '@playwright/test';
-import { createChannelHelpers, createTestEach } from '@optivem/optivem-testing';
+import { bindChannels, bindTestEach } from '@optivem/optivem-testing';
 
 const _test = base.extend<{ app: MyApp }>({
 	app: async ({}, use) => {
@@ -36,12 +36,12 @@ const _test = base.extend<{ app: MyApp }>({
 });
 
 const test = Object.assign(_test, {
-	each: createTestEach(_test),
+	each: bindTestEach(_test),
 });
 
-const { withChannels } = createChannelHelpers(test);
+const { forChannels } = bindChannels(test);
 
-withChannels('UI', 'API')(() => {
+forChannels('UI', 'API')(() => {
 	test.each(['3.5', 'lala'])(
 		'rejects non-integer quantity ($quantity)',
 		async ({ app, quantity }) => {
