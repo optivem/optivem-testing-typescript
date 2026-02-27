@@ -65,6 +65,11 @@ jobs:
           package-path: /tmp/rc-artifacts/optivem-optivem-testing-${{ steps.version.outputs.release-version }}.tgz
           npm-token: ${{ secrets.NPM_TOKEN }}
 
+      - name: Wait for npm availability
+        uses: ./.github/actions/wait-for-npm-availability
+        with:
+          release-version: ${{ steps.version.outputs.release-version }}
+
       - name: Run release smoke tests (npm)
         working-directory: system-test/smoke-test-release
         run: |
