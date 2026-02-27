@@ -15,11 +15,27 @@
 export function createTestEach(
     testObj: any,
 ) {
-    return <TCase extends Record<string, unknown>>(
+    return <TCase>(
         cases: ReadonlyArray<TCase>,
     ): ((name: string, fn: (args: any) => Promise<void>) => void) => {
         return (name: string, fn: (args: any) => Promise<void>): void => {
-            cases.forEach((row) => {
+            const placeholderKeys = Array.from(name.matchAll(/\$(\w+)/g)).map((match) => match[1]);
+            const uniquePlaceholderKeys = [...new Set(placeholderKeys)];
+
+            cases.forEach((rawRow) => {
+                let row: Record<string, unknown>;
+                if (rawRow != null && typeof rawRow === 'object' && !Array.isArray(rawRow)) {
+                    row = rawRow as Record<string, unknown>;
+                } else if (uniquePlaceholderKeys.length === 1) {
+                    row = { [uniquePlaceholderKeys[0]]: rawRow };
+                } else if (uniquePlaceholderKeys.length === 0) {
+                    row = { value: rawRow };
+                } else {
+                    throw new Error(
+                        `createTestEach: scalar rows require exactly one placeholder in test name, but got ${uniquePlaceholderKeys.length}`,
+                    );
+                }
+
                 const testName = name.replace(/\$(\w+)/g, (_: string, key: string) => {
                     const value = row[key];
                     if (typeof value === 'string') return value;
